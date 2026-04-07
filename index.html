@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Simple Job Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Google+Sans+Text:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f0f5fc;
+  --surface:   #ffffff;
+  --border:    #ccdcef;
+  --border-hv: #6fa3d0;
+  --text:      #18304a;
+  --muted:     #3d5a78;
+  --subtle:    #5878a0;
+  --accent:    #1a6bbf;
+  --accent-hv: #145299;
+  --accent-bg: #dceefb;
+  --thead-bg:  #e8f1fb;
+  --radius-sm: 8px;
+  --radius-lg: 14px;
+  --font:      "Google Sans", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-text: "Google Sans Text", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  font-family: var(--font-text);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Skip link ── */
+.skip-link {
+  position: absolute; left: -9999px; top: 8px;
+  background: var(--accent); color: #fff;
+  padding: 8px 16px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500; z-index: 100; text-decoration: none;
+}
+.skip-link:focus { left: 16px; }
+
+/* ─────────────────────────────────────────
+   HEADER — centered hero
+───────────────────────────────────────── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 44px 40px 40px;
+  text-align: center;
+  display: block;
+}
+
+.header-title { margin-bottom: 0; }
+header h1 {
+  font-family: var(--font);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+header p {
+  font-family: var(--font-text);
+  font-size: 13px;
+  color: var(--subtle);
+  letter-spacing: 0.01em;
+}
+
+/* ─────────────────────────────────────────
+   TOOLBAR — centered, two rows
+───────────────────────────────────────── */
+#toolbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 40px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+
+.toolbar-row1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Inline stat pills */
+.stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  background: var(--accent-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+.stat-pill .sp-num {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.2px;
+}
+.stat-pill .sp-lbl {
+  font-family: var(--font-text);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* Search */
+.search-wrap { position: relative; width: 220px; flex-shrink: 0; }
+.search-wrap svg {
+  position: absolute; left: 11px; top: 50%;
+  transform: translateY(-50%); color: var(--subtle); pointer-events: none;
+}
+input[type=text] {
+  width: 100%; padding: 8px 12px 8px 34px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-text); font-size: 13px; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+input[type=text]::placeholder { color: var(--subtle); }
+input[type=text]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(26,107,191,.12);
+  background: var(--surface);
+}
+
+/* Role dropdown */
+select {
+  padding: 8px 30px 8px 12px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%235878a0' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;
+  -webkit-appearance: none; appearance: none;
+  color: var(--text); font-family: var(--font-text); font-size: 13px;
+  outline: none; cursor: pointer; transition: border-color .15s, box-shadow .15s;
+}
+select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(26,107,191,.12);
+}
+
+/* Result count badge — sits next to controls */
+#count {
+  font-family: var(--font-text);
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+/* Export */
+.export-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border); background: var(--surface);
+  color: var(--muted); font-family: var(--font-text); font-size: 13px; font-weight: 500;
+  cursor: pointer; white-space: nowrap; transition: all .12s;
+}
+.export-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.export-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* City pills row — centered, scrollable on mobile */
+.toolbar-row2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.toolbar-row2::-webkit-scrollbar { display: none; }
+
+.pill {
+  padding: 6px 13px; border-radius: 20px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  color: var(--muted); font-family: var(--font-text); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all .12s; white-space: nowrap; user-select: none;
+  flex-shrink: 0; line-height: 1;
+}
+.pill:hover { border-color: var(--border-hv); color: var(--text); background: var(--accent-bg); }
+.pill:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pill.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+
+/* ─────────────────────────────────────────
+   TABLE
+───────────────────────────────────────── */
+#wrap {
+  padding: 32px 40px 80px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+table {
+  width: 100%; border-collapse: collapse;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+thead th {
+  text-align: left; padding: 14px 18px;
+  font-family: var(--font); font-size: 11px;
+  font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  background: var(--thead-bg);
+  border-bottom: 1.5px solid var(--border);
+  white-space: nowrap; cursor: pointer; user-select: none;
+  transition: color .12s;
+}
+thead th:hover { color: var(--text); }
+thead th:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+thead th .si { margin-left: 4px; opacity: .3; font-style: normal; }
+thead th.sorted .si { opacity: 1; color: var(--accent); }
+
+tbody tr { border-bottom: 1px solid var(--border); transition: background .08s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #ebf3fb; }
+
+td { padding: 16px 18px; vertical-align: middle; }
+
+/* Role badge */
+.rb {
+  display: inline-flex; align-items: center;
+  padding: 4px 10px; border-radius: 6px;
+  font-family: var(--font); font-size: 11px;
+  font-weight: 600; letter-spacing: 0.02em; white-space: nowrap;
+}
+.rb-pm   { background: #d0e4f9; color: #0f3d7a; }
+.rb-pmm  { background: #cdd8f5; color: #1a2e7a; }
+.rb-swe  { background: #c5e8f7; color: #09435e; }
+.rb-des  { background: #cde8ff; color: #0a4872; }
+.rb-data { background: #d0ecff; color: #073b5e; }
+.rb-x    { background: #dce8f5; color: #2d4a66; }
+
+/* Title + company */
+.title-cell {
+  font-family: var(--font);
+  font-size: 13px; font-weight: 600;
+  color: var(--text); line-height: 1.3;
+}
+.company {
+  font-family: var(--font-text);
+  font-size: 12px; color: var(--muted); margin-top: 2px;
+}
+
+/* City tag */
+.cp {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  border: 1px solid var(--border); font-family: var(--font-text);
+  font-size: 12px; color: var(--muted); white-space: nowrap; background: var(--bg);
+}
+.cp.remote { background: #d0e8fb; border-color: #7aaad4; color: #0d3a6e; font-weight: 500; }
+.cp-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+.posted { font-size: 12px; color: var(--subtle); white-space: nowrap; }
+
+/* Apply button */
+.apply-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 7px 14px; background: var(--accent); color: #fff;
+  border-radius: var(--radius-sm); font-family: var(--font);
+  font-size: 12px; font-weight: 600;
+  text-decoration: none; white-space: nowrap; transition: background .12s;
+}
+.apply-btn:hover { background: var(--accent-hv); }
+.apply-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+/* Empty state */
+.no-results {
+  text-align: center; padding: 80px 32px;
+  color: var(--muted); font-family: var(--font-text); font-size: 14px;
+}
+.no-results-icon { font-size: 32px; margin-bottom: 12px; }
+
+/* Footer */
+#footer {
+  text-align: center; padding: 0 40px 32px;
+  font-family: var(--font-text); font-size: 12px; color: var(--subtle);
+}
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+  header { padding: 28px 20px 24px; }
+  header h1 { font-size: 24px; }
+  .header-stats { width: 100%; }
+  .stat-chip { flex: 1; }
+  #toolbar, #wrap { padding-left: 16px; padding-right: 16px; }
+  td:nth-child(4), th:nth-child(4) { display: none; }
+}
+</style>
+</head>
+<body>
+
+<a href="#main-table" class="skip-link">Skip to job listings</a>
+
+<!-- ── Header ── -->
+<header>
+  <div class="header-title">
+    <h1>Simple Job Board</h1>
+    <p>PM &nbsp;·&nbsp; SWE &nbsp;·&nbsp; Product Designer &nbsp;·&nbsp; Product Marketing &nbsp;·&nbsp; Data Science</p>
+  </div>
+</header>
+
+<!-- ── Toolbar ── -->
+<div id="toolbar" role="search" aria-label="Filter jobs">
+  <div class="toolbar-row1">
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="text" id="search" placeholder="Search title or company…"
+             oninput="render()" aria-label="Search jobs"/>
+    </div>
+
+    <select id="role-select" onchange="activeRole=this.value;render()" aria-label="Filter by job category">
+      <option value="All">Job Categories</option>
+      <option value="Product Manager">Product Manager</option>
+      <option value="Product Marketing">Product Marketing</option>
+      <option value="Software Engineer">Software Engineer</option>
+      <option value="Product Designer">Product Designer</option>
+      <option value="Data Science">Data Science</option>
+    </select>
+
+    <div class="stat-pill" aria-label="Total jobs">
+      <span class="sp-num" id="h-jobs">—</span>
+      <span class="sp-lbl">Jobs</span>
+    </div>
+
+    <div class="stat-pill" aria-label="Total companies">
+      <span class="sp-num" id="h-cos">—</span>
+      <span class="sp-lbl">Companies</span>
+    </div>
+
+    <span id="count" aria-live="polite" aria-atomic="true"></span>
+
+    <button class="export-btn" onclick="exportExcel()" aria-label="Export current results to Excel">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Export
+    </button>
+  </div>
+
+  <div class="toolbar-row2" id="city-pills" role="group" aria-label="Filter by city">
+    <span class="pill active" data-city="All" tabindex="0" role="button" aria-pressed="true">All cities</span>
+    <span class="pill" data-city="Remote" tabindex="0" role="button" aria-pressed="false">Remote</span>
+    <span class="pill" data-city="San Francisco / Bay Area" tabindex="0" role="button" aria-pressed="false">SF / Bay Area</span>
+    <span class="pill" data-city="New York" tabindex="0" role="button" aria-pressed="false">New York</span>
+    <span class="pill" data-city="Seattle" tabindex="0" role="button" aria-pressed="false">Seattle</span>
+    <span class="pill" data-city="Chicago" tabindex="0" role="button" aria-pressed="false">Chicago</span>
+    <span class="pill" data-city="Austin" tabindex="0" role="button" aria-pressed="false">Austin</span>
+    <span class="pill" data-city="Atlanta" tabindex="0" role="button" aria-pressed="false">Atlanta</span>
+    <span class="pill" data-city="Los Angeles" tabindex="0" role="button" aria-pressed="false">Los Angeles</span>
+    <span class="pill" data-city="Boston" tabindex="0" role="button" aria-pressed="false">Boston</span>
+  </div>
+</div>
+
+<!-- ── Table ── -->
+<main id="wrap">
+  <table id="main-table" role="grid" aria-label="Job listings">
+    <thead>
+      <tr>
+        <th data-col="role_category" scope="col" tabindex="0" aria-sort="none">Role <i class="si" aria-hidden="true">↕</i></th>
+        <th data-col="title" scope="col" tabindex="0" aria-sort="none">Title &amp; Company <i class="si" aria-hidden="true">↕</i></th>
+        <th data-col="location_type" scope="col" tabindex="0" aria-sort="none">City <i class="si" aria-hidden="true">↕</i></th>
+        <th data-col="posted" scope="col" tabindex="0" aria-sort="none">Posted <i class="si" aria-hidden="true">↕</i></th>
+        <th scope="col">Apply</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div id="no-results" class="no-results" style="display:none" role="status">
+    <div class="no-results-icon">🔍</div>
+    No jobs match your filters — try adjusting your search or city.
+  </div>
+</main>
+
+<footer id="footer" aria-label="Last updated"></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let ALL_JOBS   = [];
+let sortCol    = "posted";
+let sortDir    = -1;
+let activeRole = "All";
+let activeCity = "All";
+
+const RC = {
+  "Product Manager":   "rb-pm",
+  "Product Marketing": "rb-pmm",
+  "Software Engineer": "rb-swe",
+  "Product Designer":  "rb-des",
+  "Data Science":      "rb-data",
+};
+
+function roleBadge(r) {
+  return `<span class="rb ${RC[r]||"rb-x"}">${r||"Other"}</span>`;
+}
+
+function cityTag(c) {
+  const remote = (c||"").toLowerCase().includes("remote");
+  return `<span class="cp${remote?" remote":""}"><span class="cp-dot" aria-hidden="true"></span>${c||"—"}</span>`;
+}
+
+function relDate(str) {
+  if (!str) return "—";
+  const d = new Date(str);
+  if (isNaN(d)) return str;
+  const days = Math.floor((Date.now() - d) / 86400000);
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7)  return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days/7)}w ago`;
+  return `${Math.floor(days/30)}mo ago`;
+}
+
+function filtered() {
+  const q = document.getElementById("search").value.toLowerCase().trim();
+  return ALL_JOBS.filter(j => {
+    if (activeRole !== "All" && j.role_category !== activeRole) return false;
+    if (activeCity !== "All" && j.location_type !== activeCity)  return false;
+    if (q && !`${j.title} ${j.company} ${j.location}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function sorted(list) {
+  return [...list].sort((a, b) => {
+    const av = a[sortCol] ?? "", bv = b[sortCol] ?? "";
+    if (av < bv) return sortDir;
+    if (av > bv) return -sortDir;
+    return 0;
+  });
+}
+
+function render() {
+  const jobs = sorted(filtered());
+  const cnt  = jobs.length;
+  const tot  = ALL_JOBS.length;
+
+  document.getElementById("count").textContent =
+    tot === 0 ? "" :
+    cnt === tot ? `${tot.toLocaleString()} jobs` :
+    `${cnt.toLocaleString()} of ${tot.toLocaleString()} jobs`;
+
+  const noRes = document.getElementById("no-results");
+  const table = document.getElementById("main-table");
+  noRes.style.display = cnt ? "none" : "block";
+  table.style.display = cnt ? ""     : "none";
+
+  document.getElementById("tbody").innerHTML = jobs.map(j => `
+    <tr>
+      <td>${roleBadge(j.role_category)}</td>
+      <td>
+        <div class="title-cell">${j.title||""}</div>
+        <div class="company">${j.company||""}</div>
+      </td>
+      <td>${cityTag(j.location_type||j.location)}</td>
+      <td class="posted">${relDate(j.posted)}</td>
+      <td>${j.url
+        ? `<a class="apply-btn" href="${j.url}" target="_blank" rel="noopener noreferrer" aria-label="Apply for ${(j.title||"").replace(/"/g,"'")} at ${j.company||""}">Apply <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M7 17L17 7M7 7h10v10"/></svg></a>`
+        : ""}</td>
+    </tr>`).join("");
+}
+
+// City pill click + keyboard
+document.querySelectorAll("#city-pills .pill").forEach(p => {
+  const go = () => {
+    document.querySelectorAll("#city-pills .pill").forEach(x => {
+      x.classList.remove("active"); x.setAttribute("aria-pressed","false");
+    });
+    p.classList.add("active"); p.setAttribute("aria-pressed","true");
+    activeCity = p.dataset.city;
+    render();
+  };
+  p.addEventListener("click", go);
+  p.addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } });
+});
+
+// Column sort
+document.querySelectorAll("thead th[data-col]").forEach(th => {
+  const go = () => {
+    const col = th.dataset.col;
+    sortDir = sortCol === col ? sortDir * -1 : 1;
+    sortCol = col;
+    document.querySelectorAll("thead th[data-col]").forEach(x => {
+      x.classList.remove("sorted"); x.setAttribute("aria-sort","none");
+      const si = x.querySelector(".si"); if (si) si.textContent = "↕";
+    });
+    th.classList.add("sorted");
+    th.setAttribute("aria-sort", sortDir===1 ? "ascending" : "descending");
+    th.querySelector(".si").textContent = sortDir===1 ? "↑" : "↓";
+    render();
+  };
+  th.addEventListener("click", go);
+  th.addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } });
+});
+
+// Export
+function exportExcel() {
+  const jobs = sorted(filtered());
+  if (!jobs.length) { alert("No results to export."); return; }
+  const rows = jobs.map(j => ({
+    "Role":    j.role_category||"",
+    "Title":   j.title||"",
+    "Company": j.company||"",
+    "City":    j.location_type||j.location||"",
+    "Posted":  j.posted||"",
+    "Apply":   j.url||"",
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws["!cols"] = [{wch:22},{wch:44},{wch:28},{wch:28},{wch:14},{wch:60}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Jobs");
+  const label = [
+    activeRole!=="All"?activeRole:null,
+    activeCity!=="All"?activeCity:null,
+  ].filter(Boolean).join("-")||"All";
+  XLSX.writeFile(wb, `jobs-${label.replace(/[\s\/]+/g,"-")}-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// Load data
+fetch("output/jobs.json")
+  .then(r => r.json())
+  .then(data => {
+    ALL_JOBS = data.jobs || [];
+    document.getElementById("h-jobs").textContent = ALL_JOBS.length.toLocaleString();
+    document.getElementById("h-cos").textContent  = new Set(ALL_JOBS.map(j => j.company)).size.toLocaleString();
+    render();
+    if (data.generated) {
+      const d = new Date(data.generated);
+      document.getElementById("footer").textContent =
+        `Updated ${d.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}`;
+    }
+  })
+  .catch(() => {
+    document.getElementById("no-results").style.display = "block";
+    document.getElementById("no-results").innerHTML =
+      '<div class="no-results-icon">⚠️</div>Could not load jobs.json — run the scraper first to generate it.';
+  });
+</script>
+</body>
+</html>
