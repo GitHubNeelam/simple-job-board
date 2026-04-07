@@ -536,7 +536,7 @@ function cityTag(c) {
 
 function relDate(str) {
   if (!str) return "—";
-  const d = new Date(str);
+  const d = new Date(str.length === 10 ? str + "T00:00" : str);
   if (isNaN(d)) return str;
   const days = Math.floor((Date.now() - d) / 86400000);
   if (days === 0) return "Today";
