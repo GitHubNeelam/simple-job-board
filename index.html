@@ -53,12 +53,12 @@ body {
 header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 44px 40px 40px;
+  padding: 28px 40px;
+  position: relative;
   text-align: center;
-  display: block;
 }
 
-.header-title { margin-bottom: 0; }
+.header-title { text-align: center; }
 header h1 {
   font-family: var(--font);
   font-size: 28px;
@@ -72,6 +72,13 @@ header p {
   font-size: 13px;
   color: var(--subtle);
   letter-spacing: 0.01em;
+}
+
+.alert-btn-wrap {
+  position: absolute;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /* ─────────────────────────────────────────
@@ -337,10 +344,28 @@ td { padding: 16px 18px; vertical-align: middle; }
   font-family: var(--font-text); font-size: 12px; color: var(--subtle);
 }
 
+/* Alert signup button */
+.alert-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent); color: #fff;
+  font-family: var(--font-text); font-size: 13px; font-weight: 600;
+  padding: 8px 16px; border-radius: var(--radius-sm);
+  text-decoration: none; border: none; cursor: pointer;
+  transition: opacity .12s; white-space: nowrap;
+}
+.alert-btn:hover { opacity: .88; }
+.alert-btn svg { flex-shrink: 0; }
+
 /* ── Responsive ── */
 @media (max-width: 860px) {
-  header { padding: 28px 20px 24px; }
-  header h1 { font-size: 24px; }
+  header { padding: 20px 16px 16px; }
+  header h1 { font-size: 22px; }
+  .alert-btn-wrap {
+    position: static;
+    transform: none;
+    margin-top: 14px;
+  }
+  .alert-btn { width: 100%; justify-content: center; }
   .header-stats { width: 100%; }
   .stat-chip { flex: 1; }
   #toolbar, #wrap { padding-left: 16px; padding-right: 16px; }
@@ -357,6 +382,16 @@ td { padding: 16px 18px; vertical-align: middle; }
   <div class="header-title">
     <h1>Simple Job Board</h1>
     <p>PM &nbsp;·&nbsp; SWE &nbsp;·&nbsp; Product Designer &nbsp;·&nbsp; Product Marketing &nbsp;·&nbsp; Data Science</p>
+  </div>
+  <div class="alert-btn-wrap">
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSeOfrHEKGp6D71T2SvyOim6k0Od-iPwilK-m2v8bs2_1K8n9Q/viewform"
+       target="_blank" rel="noopener noreferrer" class="alert-btn" aria-label="Get weekly job alerts by email">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+        <polyline points="22,6 12,13 2,6"/>
+      </svg>
+      Get weekly alerts
+    </a>
   </div>
 </header>
 
