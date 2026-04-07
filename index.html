@@ -241,6 +241,14 @@ tbody tr:hover { background: #ebf3fb; }
 
 td { padding: 16px 18px; vertical-align: middle; }
 
+/* Level badge — color set inline via JS */
+.lb {
+  display: inline-flex; align-items: center;
+  padding: 4px 10px; border-radius: 6px;
+  font-family: var(--font); font-size: 11px;
+  font-weight: 600; letter-spacing: 0.02em; white-space: nowrap;
+}
+
 /* Role badge */
 .rb {
   display: inline-flex; align-items: center;
@@ -296,6 +304,33 @@ td { padding: 16px 18px; vertical-align: middle; }
 }
 .no-results-icon { font-size: 32px; margin-bottom: 12px; }
 
+/* Pagination */
+#pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 0 4px;
+  flex-wrap: wrap;
+}
+.pg-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 36px; height: 36px; padding: 0 10px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--muted);
+  font-family: var(--font-text); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .12s; user-select: none;
+}
+.pg-btn:hover { border-color: var(--border-hv); color: var(--text); }
+.pg-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pg-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.pg-btn:disabled { opacity: .4; cursor: not-allowed; }
+.pg-btn.pg-arrow { font-size: 16px; }
+.pg-info {
+  font-family: var(--font-text); font-size: 12px;
+  color: var(--subtle); padding: 0 8px;
+}
+
 /* Footer */
 #footer {
   text-align: center; padding: 0 40px 32px;
@@ -333,16 +368,30 @@ td { padding: 16px 18px; vertical-align: middle; }
         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
       </svg>
       <input type="text" id="search" placeholder="Search title or company…"
-             oninput="render()" aria-label="Search jobs"/>
+             oninput="currentPage=1;render()" aria-label="Search jobs"/>
     </div>
 
-    <select id="role-select" onchange="activeRole=this.value;render()" aria-label="Filter by job category">
+    <select id="role-select" onchange="activeRole=this.value;currentPage=1;render()" aria-label="Filter by job category">
       <option value="All">Job Categories</option>
       <option value="Product Manager">Product Manager</option>
       <option value="Product Marketing">Product Marketing</option>
       <option value="Software Engineer">Software Engineer</option>
       <option value="Product Designer">Product Designer</option>
       <option value="Data Science">Data Science</option>
+    </select>
+
+    <select id="level-select" onchange="activeLevel=this.value;currentPage=1;render()" aria-label="Filter by level">
+      <option value="All">All levels</option>
+      <option value="Intern">Intern</option>
+      <option value="Entry">Entry</option>
+      <option value="Mid">Mid</option>
+      <option value="Senior">Senior</option>
+      <option value="Lead">Lead</option>
+      <option value="Staff">Staff</option>
+      <option value="Group">Group</option>
+      <option value="Principal">Principal</option>
+      <option value="Director">Director</option>
+      <option value="VP">VP</option>
     </select>
 
     <div class="stat-pill" aria-label="Total jobs">
@@ -386,6 +435,7 @@ td { padding: 16px 18px; vertical-align: middle; }
     <thead>
       <tr>
         <th data-col="role_category" scope="col" tabindex="0" aria-sort="none">Role <i class="si" aria-hidden="true">↕</i></th>
+        <th data-col="level" scope="col" tabindex="0" aria-sort="none">Level <i class="si" aria-hidden="true">↕</i></th>
         <th data-col="title" scope="col" tabindex="0" aria-sort="none">Title &amp; Company <i class="si" aria-hidden="true">↕</i></th>
         <th data-col="location_type" scope="col" tabindex="0" aria-sort="none">City <i class="si" aria-hidden="true">↕</i></th>
         <th data-col="posted" scope="col" tabindex="0" aria-sort="none">Posted <i class="si" aria-hidden="true">↕</i></th>
@@ -398,17 +448,21 @@ td { padding: 16px 18px; vertical-align: middle; }
     <div class="no-results-icon">🔍</div>
     No jobs match your filters — try adjusting your search or city.
   </div>
+  <div id="pagination" aria-label="Pagination"></div>
 </main>
 
 <footer id="footer" aria-label="Last updated"></footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-let ALL_JOBS   = [];
-let sortCol    = "posted";
-let sortDir    = -1;
-let activeRole = "All";
-let activeCity = "All";
+let ALL_JOBS    = [];
+let sortCol     = "posted";
+let sortDir     = -1;
+let activeRole  = "All";
+let activeCity  = "All";
+let activeLevel = "All";
+let currentPage = 1;
+const PAGE_SIZE = 25;
 
 const RC = {
   "Product Manager":   "rb-pm",
@@ -418,8 +472,26 @@ const RC = {
   "Data Science":      "rb-data",
 };
 
+const LC = {
+  "Intern":    { bg: "#f0fdf4", color: "#15803d", label: "Intern" },
+  "Entry":     { bg: "#fef9c3", color: "#854d0e", label: "Entry" },
+  "Mid":       { bg: "#eff6ff", color: "#1d4ed8", label: "Mid" },
+  "Senior":    { bg: "#dbeafe", color: "#1e40af", label: "Senior" },
+  "Lead":      { bg: "#e0e7ff", color: "#3730a3", label: "Lead" },
+  "Staff":     { bg: "#ede9fe", color: "#5b21b6", label: "Staff" },
+  "Group":     { bg: "#f3e8ff", color: "#6b21a8", label: "Group" },
+  "Principal": { bg: "#fdf4ff", color: "#86198f", label: "Principal" },
+  "Director":  { bg: "#fce7f3", color: "#9d174d", label: "Director" },
+  "VP":        { bg: "#fff1f2", color: "#9f1239", label: "VP" },
+};
+
 function roleBadge(r) {
   return `<span class="rb ${RC[r]||"rb-x"}">${r||"Other"}</span>`;
+}
+
+function levelBadge(l) {
+  const s = LC[l] || { bg: "#f4f4f5", color: "#52525b", label: l||"—" };
+  return `<span class="lb" style="background:${s.bg};color:${s.color}">${s.label}</span>`;
 }
 
 function cityTag(c) {
@@ -442,8 +514,9 @@ function relDate(str) {
 function filtered() {
   const q = document.getElementById("search").value.toLowerCase().trim();
   return ALL_JOBS.filter(j => {
-    if (activeRole !== "All" && j.role_category !== activeRole) return false;
-    if (activeCity !== "All" && j.location_type !== activeCity)  return false;
+    if (activeRole  !== "All" && j.role_category !== activeRole)  return false;
+    if (activeCity  !== "All" && j.location_type !== activeCity)   return false;
+    if (activeLevel !== "All" && j.level         !== activeLevel)  return false;
     if (q && !`${j.title} ${j.company} ${j.location}`.toLowerCase().includes(q)) return false;
     return true;
   });
@@ -459,14 +532,26 @@ function sorted(list) {
 }
 
 function render() {
-  const jobs = sorted(filtered());
-  const cnt  = jobs.length;
+  const all  = sorted(filtered());
+  const cnt  = all.length;
   const tot  = ALL_JOBS.length;
+  const pages = Math.max(1, Math.ceil(cnt / PAGE_SIZE));
 
+  // Clamp page
+  if (currentPage > pages) currentPage = pages;
+  if (currentPage < 1) currentPage = 1;
+
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const jobs  = all.slice(start, start + PAGE_SIZE);
+
+  // Count line
+  const from = cnt === 0 ? 0 : start + 1;
+  const to   = Math.min(start + PAGE_SIZE, cnt);
   document.getElementById("count").textContent =
-    tot === 0 ? "" :
-    cnt === tot ? `${tot.toLocaleString()} jobs` :
-    `${cnt.toLocaleString()} of ${tot.toLocaleString()} jobs`;
+    tot === 0  ? "" :
+    cnt === 0  ? "0 results" :
+    cnt === tot ? `Showing ${from}–${to} of ${tot.toLocaleString()} jobs` :
+    `Showing ${from}–${to} of ${cnt.toLocaleString()} filtered jobs`;
 
   const noRes = document.getElementById("no-results");
   const table = document.getElementById("main-table");
@@ -476,6 +561,7 @@ function render() {
   document.getElementById("tbody").innerHTML = jobs.map(j => `
     <tr>
       <td>${roleBadge(j.role_category)}</td>
+      <td>${levelBadge(j.level)}</td>
       <td>
         <div class="title-cell">${j.title||""}</div>
         <div class="company">${j.company||""}</div>
@@ -486,6 +572,44 @@ function render() {
         ? `<a class="apply-btn" href="${j.url}" target="_blank" rel="noopener noreferrer" aria-label="Apply for ${(j.title||"").replace(/"/g,"'")} at ${j.company||""}">Apply <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M7 17L17 7M7 7h10v10"/></svg></a>`
         : ""}</td>
     </tr>`).join("");
+
+  renderPagination(pages);
+}
+
+function renderPagination(pages) {
+  const pg = document.getElementById("pagination");
+  if (pages <= 1) { pg.innerHTML = ""; return; }
+
+  const p = currentPage;
+  let html = "";
+
+  // Prev button
+  html += `<button class="pg-btn pg-arrow" onclick="goPage(${p-1})" ${p===1?"disabled":""} aria-label="Previous page">‹</button>`;
+
+  // Page numbers — show first, last, current ±2, with ellipsis
+  const range = new Set([1, pages, p-2, p-1, p, p+1, p+2].filter(n => n >= 1 && n <= pages));
+  const nums  = [...range].sort((a,b) => a-b);
+
+  let prev = null;
+  for (const n of nums) {
+    if (prev !== null && n - prev > 1) {
+      html += `<span class="pg-info">…</span>`;
+    }
+    html += `<button class="pg-btn${n===p?" active":""}" onclick="goPage(${n})" aria-label="Page ${n}" aria-current="${n===p?"page":"false"}">${n}</button>`;
+    prev = n;
+  }
+
+  // Next button
+  html += `<button class="pg-btn pg-arrow" onclick="goPage(${p+1})" ${p===pages?"disabled":""} aria-label="Next page">›</button>`;
+
+  pg.innerHTML = html;
+}
+
+function goPage(n) {
+  currentPage = n;
+  render();
+  // Scroll table into view smoothly
+  document.getElementById("main-table").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 // City pill click + keyboard
@@ -496,6 +620,7 @@ document.querySelectorAll("#city-pills .pill").forEach(p => {
     });
     p.classList.add("active"); p.setAttribute("aria-pressed","true");
     activeCity = p.dataset.city;
+    currentPage = 1;
     render();
   };
   p.addEventListener("click", go);
@@ -515,6 +640,7 @@ document.querySelectorAll("thead th[data-col]").forEach(th => {
     th.classList.add("sorted");
     th.setAttribute("aria-sort", sortDir===1 ? "ascending" : "descending");
     th.querySelector(".si").textContent = sortDir===1 ? "↑" : "↓";
+    currentPage = 1;
     render();
   };
   th.addEventListener("click", go);
@@ -527,6 +653,7 @@ function exportExcel() {
   if (!jobs.length) { alert("No results to export."); return; }
   const rows = jobs.map(j => ({
     "Role":    j.role_category||"",
+    "Level":   j.level||"",
     "Title":   j.title||"",
     "Company": j.company||"",
     "City":    j.location_type||j.location||"",
@@ -534,7 +661,7 @@ function exportExcel() {
     "Apply":   j.url||"",
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws["!cols"] = [{wch:22},{wch:44},{wch:28},{wch:28},{wch:14},{wch:60}];
+  ws["!cols"] = [{wch:20},{wch:12},{wch:44},{wch:28},{wch:28},{wch:14},{wch:60}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Jobs");
   const label = [
